@@ -4,6 +4,8 @@ This is a [TensorFlow](http://www.tensorflow.org/) implementation of the
 [Swivel algorithm](http://arxiv.org/abs/1602.02215) for generating word
 embeddings.
 
+### This is the source{d}'s fork, which is different from the [original](https://github.com/tensorflow/models/tree/master/swivel). See "Changes in this fork".
+
 Swivel works as follows:
 
 1. Compute the co-occurrence statistics from a corpus; that is, determine how
@@ -173,12 +175,11 @@ mixed case and evaluate them using lower case, things won't work well.
 
 # Contact
 
-If you have any questions about Swivel, feel free to post to
-[swivel-embeddings@googlegroups.com](https://groups.google.com/forum/#!forum/swivel-embeddings)
-or contact us directly:
+source{d}'s Machine Learning Team: machine-learning@sourced.tech
 
-* Noam Shazeer (`noam@google.com`)
-* Ryan Doherty (`portalfire@google.com`)
-* Colin Evans (`colinhevans@google.com`)
-* Chris Waterson (`waterson@google.com`)
+# Changes in this fork
 
+* Tailored for a single machine (but multiple GPUs)
+* Tensorboard support
+* High performance **fastprep**
+* Code style, logging changes
