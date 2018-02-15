@@ -72,10 +72,10 @@ flags.DEFINE_string("output_base_path", None,
 flags.DEFINE_integer("embedding_size", 300, "Size of the embeddings")
 flags.DEFINE_boolean("trainable_bias", False, "Biases are trainable")
 flags.DEFINE_integer("submatrix_rows", 4096,
-                     "Rows in each training submatrix. This must match"
+                     "Rows in each training submatrix. This must match "
                      "the training data.")
 flags.DEFINE_integer("submatrix_cols", 4096,
-                     "Rows in each training submatrix. This must match"
+                     "Rows in each training submatrix. This must match "
                      "the training data.")
 flags.DEFINE_float("loss_multiplier", 1.0 / 4096,
                    "constant multiplier on loss.")
@@ -144,7 +144,7 @@ def count_matrix_input(filenames, submatrix_rows, submatrix_cols):
     sparse_indices = tf.concat(axis=1, values=[tf.expand_dims(sparse_local_row, 1),
                                                tf.expand_dims(sparse_local_col, 1)])
     count = tf.sparse_to_dense(sparse_indices, [submatrix_rows, submatrix_cols],
-                               sparse_count)
+                               sparse_count, validate_indices=False)
 
     queued_global_row, queued_global_col, queued_count = tf.train.batch(
         [global_row, global_col, count],
@@ -205,9 +205,9 @@ class SwivelModel:
 
         # Create paths to input data files
         log("Reading model from: %s", config.input_base_path)
-        count_matrix_files = glob.glob(config.input_base_path + "/shard-*.pb")
-        row_sums_path = config.input_base_path + "/row_sums.txt"
-        col_sums_path = config.input_base_path + "/col_sums.txt"
+        count_matrix_files = glob.glob(os.path.join(config.input_base_path, "shard-*.pb"))
+        row_sums_path = os.path.join(config.input_base_path, "row_sums.txt")
+        col_sums_path = os.path.join(config.input_base_path, "col_sums.txt")
 
         # Read marginals
         row_sums = read_marginals_file(row_sums_path)
@@ -218,6 +218,14 @@ class SwivelModel:
         log("Matrix dim: (%d,%d) SubMatrix dim: (%d,%d)",
             self.n_rows, self.n_cols, config.submatrix_rows,
             config.submatrix_cols)
+        if self.n_cols < config.submatrix_cols:
+            raise ValueError(
+                "submatrix_cols={0} can not be bigger than columns number={1} "
+                "(specify submatrix_cols={1})".format(config.submatrix_cols, self.n_cols))
+        if self.n_rows < config.submatrix_rows:
+            raise ValueError(
+                "submatrix_rows={0} can not be bigger than rows number={1} "
+                "(specify submatrix_rows={1})".format(config.submatrix_rows, self.n_cols))
         self.n_submatrices = (self.n_rows * self.n_cols /
                               (config.submatrix_rows * config.submatrix_cols))
         log("n_submatrices: %d", self.n_submatrices)
@@ -359,6 +367,8 @@ class SwivelModel:
             tf.zeros((length, self._config.embedding_size)),
             name="top10k_embedding")
         embedding_config.tensor_name = self.embedding10k.name
+        embedding_config.metadata_path = os.path.join(
+            self._config.input_base_path, "row_vocab.txt")
         tf.contrib.tensorboard.plugins.projector.visualize_embeddings(
             self.writer, projector_config)
         self.saver = tf.train.Saver((self.embedding10k,), max_to_keep=1)
